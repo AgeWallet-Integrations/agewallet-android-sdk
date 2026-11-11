@@ -31,18 +31,22 @@ import java.net.URLEncoder
  * }
  * ```
  */
-class AgeWallet(
-    context: Context,
-    private val config: AgeWalletConfig
+class AgeWallet internal constructor(
+    private val config: AgeWalletConfig,
+    private val storage: Storage
 ) {
+    /**
+     * @param context Any context; the SDK keeps its state in EncryptedSharedPreferences of the application context
+     * @param config Client ID, redirect URI, endpoints and default metadata
+     */
+    constructor(context: Context, config: AgeWalletConfig) : this(config, Storage(context.applicationContext))
+
     companion object {
         private const val TAG = "AgeWallet"
 
         /** Maximum byte length for the metadata string (matches server-side limit). */
         const val METADATA_MAX_BYTES = 4096
     }
-
-    private val storage = Storage(context.applicationContext)
 
     /**
      * Runtime metadata value. Initialised from the config default; mutable via setMetadata().

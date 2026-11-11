@@ -7,30 +7,31 @@ import androidx.security.crypto.MasterKey
 import org.json.JSONObject
 
 /**
- * Secure storage for verification and OIDC state.
+ * Secure storage for verification and OIDC state, as JSON strings in [prefs].
+ * Storage(context) keeps them in EncryptedSharedPreferences; unit tests pass plain SharedPreferences.
  */
-internal class Storage(context: Context) {
+internal class Storage(private val prefs: SharedPreferences) {
     companion object {
         private const val PREFS_NAME = "io.agewallet.sdk.prefs"
         private const val KEY_VERIFICATION = "verification"
         private const val KEY_OIDC = "oidc"
+
+        private fun encryptedPrefs(context: Context): SharedPreferences {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+
+            return EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
     }
 
-    private val prefs: SharedPreferences
-
-    init {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-
-        prefs = EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-    }
+    constructor(context: Context) : this(encryptedPrefs(context))
 
     /**
      * Get stored verification state.
